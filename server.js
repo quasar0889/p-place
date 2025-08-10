@@ -1,4 +1,4 @@
- const express = require('express');
+const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
@@ -6,10 +6,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'https://syayou.f5.si', // ここを実際のフロントのURLに
+    origin: 'https://syayou.f5.si', // フロントのURL
     methods: ['GET', 'POST']
   }
 });
+
 app.get('/', (req, res) => {
   res.send('Hello from r/place backend!');
 });
@@ -22,13 +23,20 @@ io.on('connection', (socket) => {
   // 初期ピクセル送信
   socket.emit('init', pixels);
 
-  // クライアントからピクセル変更受信
+  // 通常の1ピクセル更新
   socket.on('setPixel', ({ x, y, color }) => {
     const key = `${x}_${y}`;
     pixels[key] = color;
-
-    // 変更を全クライアントに通知
     io.emit('pixelUpdate', { x, y, color });
+  });
+
+  // 一括更新（管理人ページ専用想定）
+  socket.on('bulkSetPixels', (pixelArray) => {
+    pixelArray.forEach(({ x, y, color }) => {
+      const key = `${x}_${y}`;
+      pixels[key] = color;
+    });
+    io.emit('bulkPixelUpdate', pixelArray);
   });
 
   socket.on('disconnect', () => {
