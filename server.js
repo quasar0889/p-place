@@ -6,9 +6,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'https://あなたのXREAドメイン', // ここを実際のフロントのURLに
+    origin: 'https://syayou.f5.si', // ここを実際のフロントのURLに
     methods: ['GET', 'POST']
   }
+});
+app.get('/', (req, res) => {
+  res.send('Hello from r/place backend!');
 });
 
 const pixels = {}; // { "x_y": "#RRGGBB" }
