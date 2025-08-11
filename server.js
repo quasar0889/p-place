@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,7 +16,33 @@ app.get('/', (req, res) => {
   res.send('Hello from r/place backend!');
 });
 
-const pixels = {}; // { "x_y": "#RRGGBB" }
+// 保存用ファイルパス
+const PIXELS_FILE = './pixels.json';
+
+// 起動時に保存ファイル読み込み
+let pixels = {};
+if (fs.existsSync(PIXELS_FILE)) {
+  try {
+    const data = fs.readFileSync(PIXELS_FILE, 'utf8');
+    pixels = JSON.parse(data);
+    console.log('Pixel data loaded from file.');
+  } catch (err) {
+    console.error('Error loading pixel data:', err);
+    pixels = {};
+  }
+} else {
+  console.log('No saved pixel data found, starting fresh.');
+  pixels = {};
+}
+
+// ピクセル状態を保存する関数
+function savePixels() {
+  try {
+    fs.writeFileSync(PIXELS_FILE, JSON.stringify(pixels));
+  } catch (err) {
+    console.error('Error saving pixel data:', err);
+  }
+}
 
 io.on('connection', (socket) => {
   console.log('user connected');
@@ -27,6 +54,7 @@ io.on('connection', (socket) => {
   socket.on('setPixel', ({ x, y, color }) => {
     const key = `${x}_${y}`;
     pixels[key] = color;
+    savePixels(); // 保存
     io.emit('pixelUpdate', { x, y, color });
   });
 
@@ -36,6 +64,7 @@ io.on('connection', (socket) => {
       const key = `${x}_${y}`;
       pixels[key] = color;
     });
+    savePixels(); // 保存
     io.emit('bulkPixelUpdate', pixelArray);
   });
 
